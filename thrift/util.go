@@ -1,9 +1,10 @@
-package parquet
+package thrift
 
 import (
 	"bytes"
 	"fmt"
 	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/zenixls2/goparquet"
 	"io"
 )
 
@@ -14,49 +15,25 @@ type T interface {
 
 // Convert Thrift enums to / from parquet enums
 
-func (tp *Type) FromTrift() Type {
-	return *tp
+func (tp *Type) FromTrift() goparquet.Type {
+	return goparquet.Type(*tp)
 }
 
-func (tp *ConvertedType) FromThrift() LogicalType {
+func (tp *ConvertedType) FromThrift() goparquet.LogicalType {
 	// item 0 is NONE
-	return LogicalType(*tp + 1)
+	return goparquet.LogicalType(*tp + 1)
 }
 
-func (tp *FieldRepetitionType) FromThrift() Repetition {
-	return Repetition(*tp)
+func (tp *FieldRepetitionType) FromThrift() goparquet.Repetition {
+	return goparquet.Repetition(*tp)
 }
 
-func (tp *Encoding) FromThrift() Encoding {
-	return *tp
+func (tp *Encoding) FromThrift() goparquet.Encoding {
+	return goparquet.Encoding(*tp)
 }
 
-func (tp *CompressionCodec) FromThrift() Compression {
-	return Compression(*tp)
-}
-
-func (tp *Type) ToThrift() Type {
-	return *tp
-}
-
-func (tp *LogicalType) ToThrift() ConvertedType {
-	// item 0 is NONE
-	if *tp == LogicalType_NONE {
-		panic(fmt.Errorf("LogicalType::NONE cannot be convert back to thrift"))
-	}
-	return ConvertedType(*tp - 1)
-}
-
-func (tp *Repetition) ToThrift() FieldRepetitionType {
-	return FieldRepetitionType(*tp)
-}
-
-func (tp *Encoding) ToThrift() Encoding {
-	return *tp
-}
-
-func (tp *Compression) ToThrift() CompressionCodec {
-	return CompressionCodec(*tp)
+func (tp *CompressionCodec) FromThrift() goparquet.Compression {
+	return goparquet.Compression(*tp)
 }
 
 // Thrift struct serialization / deserialization utilities

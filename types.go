@@ -1,4 +1,17 @@
-package parquet
+package goparquet
+
+type Type int64
+
+const (
+	Type_BOOLEAN              Type = 0
+	Type_INT32                Type = 1
+	Type_INT64                Type = 2
+	Type_INT96                Type = 3
+	Type_FLOAT                Type = 4
+	Type_DOUBLE               Type = 5
+	Type_BYTE_ARRAY           Type = 6
+	Type_FIXED_LEN_BYTE_ARRAY Type = 7
+)
 
 type LogicalType int
 
@@ -26,6 +39,19 @@ const (
 	LogicalType_JSON             LogicalType = 20
 	LogicalType_BSON             LogicalType = 21
 	LogicalType_INTERVAL         LogicalType = 22
+)
+
+type Encoding int64
+
+const (
+	Encoding_PLAIN                   Encoding = 0
+	Encoding_PLAIN_DICTIONARY        Encoding = 2
+	Encoding_RLE                     Encoding = 3
+	Encoding_BIT_PACKED              Encoding = 4
+	Encoding_DELTA_BINARY_PACKED     Encoding = 5
+	Encoding_DELTA_LENGTH_BYTE_ARRAY Encoding = 6
+	Encoding_DELTA_BYTE_ARRAY        Encoding = 7
+	Encoding_RLE_DICTIONARY          Encoding = 8
 )
 
 type Repetition int

@@ -2,9 +2,10 @@ package file
 
 import (
 	"bytes"
+	"encoding/binary"
 	"github.com/zenixls2/goparquet"
 	"github.com/zenixls2/goparquet/column"
-	"github.com/zenixls2/goparquet/schema"
+	_schema "github.com/zenixls2/goparquet/schema"
 	"github.com/zenixls2/goparquet/thrift"
 	"io"
 	"unsafe"
@@ -27,14 +28,14 @@ type SerializedPageWriter struct {
 func (s *SerializedPageWriter) WriteDataPage(page *column.CompressedDataPage) int64 {
 	uncompressed_size := page.UncompressedSize()
 	compressed_data := page.Buffer()
-	data_page_header := schema.DataPageHeader{
+	data_page_header := _schema.DataPageHeader{
 		NumValues:               page.NumValues(),
 		Encoding:                page.Encoding().ToThrift(),
 		DefinitionLevelEncoding: page.DefinitionLevelEncoding().ToThrift(),
 		RepetitionLevelEncoding: page.RepetitionLevelEncoding().ToThrift(),
 		Statistics:              page.Statistics().ToThrift(),
 	}
-	page_header := schema.PageHeader{
+	page_header := _schema.PageHeader{
 		Type:                 goparquet.PageType_DATA_PAGE,
 		UncompressedPageSize: uncompressed_size,
 		CompressedPageSize:   compressed_data.Len(),
@@ -59,12 +60,12 @@ func (s *SerializedPageWriter) WriteDataPage(page *column.CompressedDataPage) in
 func (s *SerializedPageWriter) WriteDictionaryPage(page *DictionaryPage) int64 {
 	uncompressed_size := page.Size()
 	compressed_data := s.Compress(page.Buffer())
-	dict_page_header := schema.DictionaryPageHeader{
+	dict_page_header := _schema.DictionaryPageHeader{
 		NumValues: page.NumValues(),
 		Encoding:  page.Encoding().ToThrfit(),
 		IsSorted:  page.IsSorted(),
 	}
-	page_header := schema.PageHeader{
+	page_header := _schema.PageHeader{
 		Type:                 goparquet.PageType_DICTIONARY_PAGE,
 		UncompressedPageSize: uncompressed_size,
 		CompressedPageSize:   compressed_data.Len(),
@@ -115,8 +116,8 @@ func NewSerializedPageWriter(sink io.Writer, codec *Compression, metadata *Colum
 	}
 }
 
-func (e *EncodedStatistics) ToThrift() schema.Statistics {
-	statistics := new(schema.Statistics)
+func (e *EncodedStatistics) ToThrift() _schema.Statistics {
+	statistics := new(_schema.Statistics)
 	if e.HasMin {
 		statistics.SetMin(e.Min())
 	}
@@ -250,6 +251,7 @@ func (f *FileSerializer) NumRows() int64 {
 }
 
 func (f *FileSerializer) StartFile() {
+	f.Sink.Write(PARQUET_MAGIC)
 }
 
 func (f *FileSerializer) WriteMetaData() {
@@ -259,11 +261,28 @@ func (f *FileSerializer) WriteMetaData() {
 	// Get a FileMetaData
 	metadata := f.Metadata.Finish()
 	metadata.WriteTo(f.Sink)
-	metadata_len = f.Sink.(*bytes.Buffer).Len()
+	metadata_len = f.Sink.(*bytes.Buffer).Len() - metadata_len
 
 	// Write Footer
-	f.Sink.Write(//HERE)
+	metadata_len_reinterpret := *(*int)(unsafe.Pointer(&metadata_len))
+	binary.Write(f.Sink, binary.LittleEndian, metadata_len_reinterpret)
+	f.Sink.Write(PARQUET_MAGIC)
 }
 
-func NewFileSerializerOpen(sink io.Writer, schema *schema.GroupNode, properties *WriterProperties) ParquetFileWriterContents {
+func NewFileSerializerOpen(sink io.Writer, schema *_schema.GroupNode, properties *WriterProperties) ParquetFileWriterContents {
+	return NewFileSerializer(sink, schema, properties)
+}
+
+func NewFileSerializer(sink io.Writer, schema *_schema.GroupNode, properties *WriterProperties) *FileSerializer {
+	f := FileSerializer{
+		Sink:         sink,
+		IsOpen:       true,
+		Properties:   properties,
+		NumRowGroups: 0,
+		NumRows:      0,
+	}
+	f.Schema.Init(schema)
+	f.Metadata = NewFileMetaDataBuilderMake(schema, properties)
+	f.StartFile()
+	return &f
 }

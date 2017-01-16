@@ -1,4 +1,4 @@
-package goparquet
+package ptype
 
 type Type int64
 

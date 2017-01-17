@@ -57,7 +57,7 @@ const (
 type Repetition int
 
 const (
-	Repetition_REQUITED Repetition = 0
+	Repetition_REQUIRED Repetition = 0
 	Repetition_OPTIONAL Repetition = 1
 	Repetition_REPEATED Repetition = 2
 )
